@@ -1,1 +1,1 @@
-# midi.nvim
+# ⚡ midi.nvim
