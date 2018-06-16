@@ -11,6 +11,10 @@ import rtmidi
 from threading import Thread
 import time
 
+class MidiNvimProgrammer(object):
+    def __init__(self):
+        pass
+
 class MidiNvim(object):
     """ Main class for the plugin, manages
         the input commands and the spawning of
@@ -19,7 +23,6 @@ class MidiNvim(object):
         self.nvim = nvim
         self.midiin = None
         self.mode = "programmer"
-        self.mode = None
 
 
 # ============================================================================
@@ -33,16 +36,23 @@ class MidiNvim(object):
                 self.nvim.async_call(self.midiHandler, m, "")
 
     def handProgrammerEvent(self, m):
-        pass
-
+        # This handler manages the programmer "modes"/"inserts"
+        if m.getNoteNumber() == 55:
+            self.nvim.command('normal! h')
+        elif m.getNoteNumber() == 64:
+            self.nvim.command('normal! l')
+        elif m.getNoteNumber() == 60:
+            self.nvim.command('normal! k')
+        elif m.getNoteNumber() == 62:
+            self.nvim.command('normal! j')
 
     # Debug printer
     def print_message(self, midi):
         outStr = ""
         if midi.isNoteOn():
-            outStr = 'ON: ' + midi.getMidiNoteName(midi.getNoteNumber()) + " " + str(midi.getVelocity())
+            outStr = 'ON: ' + str(midi.getNoteNumber()) + " " + str(midi.getVelocity())
         elif midi.isNoteOff():
-            outStr = 'OFF: ' +  midi.getMidiNoteName(midi.getNoteNumber())
+            outStr = 'OFF: ' +  str(midi.getNoteNumber())
         elif midi.isController():
             outStr = 'CONTROLLER' + midi.getControllerNumber() + midi.getControllerValue()
         self.nvim.current.buffer.append(outStr)
@@ -85,7 +95,7 @@ class MidiNvim(object):
     def midiHandler(self, args, range):
         m = args
         # This is where the MiGiC shall happen! 
-        if self.mode == 'programmer':
+        if self.mode == 'programmer' and m.isNoteOn():
             self.handProgrammerEvent(m)
         else:
             self.print_message(m)
