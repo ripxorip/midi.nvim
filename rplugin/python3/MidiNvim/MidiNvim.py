@@ -19,16 +19,23 @@ class MidiNvim(object):
         self.midiin = None
         # Shall be parameter
         self.mode = "programmer"
+        self.period = 50 # 50ms
 
 # ============================================================================
 # Helpers
 # ============================================================================
     def thread_midiHandler(self):
+        idleCounter = 0
         # This is how we do it
         while self.threadShallRun:
-            m = self.midiin.getMessage(50) # 50ms timeout
+            m = self.midiin.getMessage(self.period)
+            idleCounter += self.period
             if m:
+                idleCounter = 0
                 self.nvim.async_call(self.handleEvent, m, "")
+            # Check time intervals every
+            elif idleCounter > 250:
+                self.nvim.async_call(self.handleEvent, None, "")
 
     def handleEvent(self, args, range):
         m = args
