@@ -5,7 +5,7 @@
 # ============================================================================
 import neovim
 import os
-# Import rtmidi (only dependency)
+# (only dependency)
 import rtmidi
 # Need a separate thread for the MIDI
 from threading import Thread
@@ -18,6 +18,8 @@ class MidiNvim(object):
     def __init__(self, nvim, log=False):
         self.nvim = nvim
         self.midiin = None
+        self.mode = "programmer"
+        self.mode = None
 
 
 # ============================================================================
@@ -26,9 +28,13 @@ class MidiNvim(object):
     def thread_midiHandler(self):
         # This is how we do it
         while self.threadShallRun:
-            self.nvim.async_call(self.midiHandler, "", "")
-            # Run in ~50ms
-            time.sleep(50.00/1000.00)
+            m = self.midiin.getMessage(50) # 50ms timeout
+            if m:
+                self.nvim.async_call(self.midiHandler, m, "")
+
+    def handProgrammerEvent(self, m):
+        pass
+
 
     # Debug printer
     def print_message(self, midi):
@@ -74,8 +80,12 @@ class MidiNvim(object):
             self.nvim.current.buffer.append("%d: %s" % (i, self.midiin.getPortName(i)))
             i += 1
 
+    # Main handler
+    # ===========
     def midiHandler(self, args, range):
+        m = args
         # This is where the MiGiC shall happen! 
-        m = self.midiin.getMessage(25) # 25ms timeout
-        if m:
+        if self.mode == 'programmer':
+            self.handProgrammerEvent(m)
+        else:
             self.print_message(m)
