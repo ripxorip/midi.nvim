@@ -11,7 +11,7 @@ MIDI. Below you can soon see some example of the plugin in action.
 " Lists the available MIDI ports
 ListMidiInputs
 " Start listening to MIDI commands
-StartMidi
+StartMidi (optional)port " as listed by the 'ListMidiInputs' command
 " Start listening to MIDI commands
 StopMidi
 ```
