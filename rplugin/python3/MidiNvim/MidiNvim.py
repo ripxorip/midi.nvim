@@ -22,8 +22,8 @@ class MidiNvim(object):
     def __init__(self, nvim, log=False):
         self.nvim = nvim
         self.midiin = None
+        # Shall be parameter
         self.mode = "programmer"
-
 
 # ============================================================================
 # Helpers
@@ -61,6 +61,18 @@ class MidiNvim(object):
 # Commands
 # ============================================================================
     def startMidi(self, args, range):
+        self.ogBuffer = self.nvim.current.buffer
+        # Start the status window
+        self.nvim.command('split')
+        self.nvim.command('wincmd j')
+        self.nvim.command('e midi_status')
+        self.nvim.current.window.height = 2
+        self.nvim.command('setlocal buftype=nofile')
+        self.nvim.command('setlocal filetype=midi_status')
+        self.statusBufferNumber = self.nvim.current.buffer.number
+        self.statusBuffer = self.nvim.current.buffer
+        self.nvim.command('wincmd k')
+        self.nvim.current.buffer = self.ogBuffer
         if self.midiin == None:
             self.midiin = rtmidi.RtMidiIn()
         if len(args) > 0:
@@ -72,6 +84,11 @@ class MidiNvim(object):
         self.threadShallRun = True
         self.midiThread = Thread(target=self.thread_midiHandler)
         self.midiThread.start()
+        #
+        initialStatStr = "| Port \"" + self.midiin.getPortName(port)
+        initialStatStr += "\" opened, waiting for MIDI..."
+        self.statusBuffer[0] = initialStatStr 
+        self.statusBuffer.append("| Mode: \"%s\" | Preset: \"%s\"" % ("normal", self.mode))
 
     def stopMidi(self, args, range):
         # Shall start a background thread
