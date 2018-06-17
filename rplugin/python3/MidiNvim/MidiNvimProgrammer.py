@@ -29,14 +29,18 @@ class keyBinding(object):
                 82: 'normal! ~h', # Change case
                 }
         # List of all keys that can be used to start a melody
-        self.melodyKeys = [66]
+        self.melodyKeys = [59, 52]
         # This dictionary contains all melodies that can be played
         self.melodies = {
-                'minorInterval': [66, 68, 69]
+                'mario': [52, 64, 49, 61, 50, 62],
+                'majorArp': [59, 64, 68, 71],
+                'dedu': [59, 53],
                 }
         # This dictionary contains binding between action and melody
         self.melodyActions = {
-                'minorInterval': 'insertCInclude'
+                'majorArp': 'insertCReturn',
+                'dedu': 'undo',
+                'mario': 'guitarsCanCode',
                 }
 
         self.actionImplementations = {
@@ -45,6 +49,8 @@ class keyBinding(object):
                 'inserCInt': 'normal! iint ',
                 'insertCReturn': 'normal! ireturn ',
                 'insertCVoid': 'normal! ivoid ',
+                'undo': 'normal! u',
+                'guitarsCanCode': 'normal! iGuitars can code \m/ ',
                 }
 
 def millis_interval(start, end):
@@ -67,7 +73,7 @@ class MidiNvimProgrammer(object):
     def timeSinceLast(self):
         return millis_interval(self.prev, datetime.datetime.now()) 
 
-    def checkMelodyInArray(self, mel):
+    def checkMelodyInArray(self):
         for mel in self.keys.melodies:
             if len(self.melodyArray) >= len(self.keys.melodies[mel]):
                 allSame = True
@@ -76,8 +82,8 @@ class MidiNvimProgrammer(object):
                         allSame = False
                         break
                 if allSame:
-                    return True
-        return False
+                    return True, mel
+        return False, None
 
     def processMidiEvent(self, m):
         mnum = m.getNoteNumber()
@@ -85,7 +91,7 @@ class MidiNvimProgrammer(object):
         # This handler manages the programmer "modes"/"inserts"
         if m.isNoteOn():
             # Handle single key
-            if m.getNoteNumber() in self.keys.singleKeys:
+            if (m.getNoteNumber() in self.keys.singleKeys) and not self.inMelody:
                 cmd = self.keys.singleKeys[m.getNoteNumber()]
                 statStr += " | single note cmd: \"%s\"" % cmd
                 self.nvim.command(cmd)
@@ -94,18 +100,18 @@ class MidiNvimProgrammer(object):
                 self.inMelody = True
                 statStr += " | looking for melody.."
                 self.melodyArray.append(m.getNoteNumber())
-                for mel in self.keys.melodies:
-                    if self.checkMelodyInArray(mel):
-                        statStr = " | melody \"%s\" detected, performing action!" % mel
-                        # Perform the action as stated by the melody
-                        self.nvim.command(self.keys.actionImplementations[self.keys.melodyActions[mel]])
-                        self.melodyArray = []
-                        self.inMelody = False
+                ret, foundMel = self.checkMelodyInArray()
+                if ret:
+                    statStr = " | melody \"%s\" detected, performing action!" % foundMel
+                    # Perform the action as stated by the melody
+                    self.nvim.command(self.keys.actionImplementations[self.keys.melodyActions[foundMel]])
+                    self.melodyArray = []
+                    self.inMelody = False
             self.statusBuffer[0] = statStr
 
     def processTimeEvent(self):
         # Timeout for a command
-        if(self.timeSinceLast() > 1000):
+        if(self.timeSinceLast() > 1000) or (self.timeSinceLast() > 400 and self.inMelody):
             self.inMelody = False
             self.melodyArray = []
             self.statusBuffer[0] = "Waiting for MIDI.."
