@@ -11,10 +11,22 @@ class keyBinding(object):
     def __init__(self, nvim):
         self.nvim = nvim
         self.singleKeys = {
-                55: 'normal! h',
-                64: 'normal! l',
-                60: 'normal! k',
-                62: 'normal! j'
+                65: 'normal! h',
+                60: 'normal! b',
+                74: 'normal! l',
+                79: 'normal! w',
+                69: 'normal! k',
+                71: 'normal! j',
+                72: 'normal! <C-d>',
+                68: 'normal! <c-u>',
+                73: 'normal! i ', # insert space
+                75: 'normal! i0 ', # insert number
+                76: 'normal! ia ', # insert character
+                78: 'normal! i; ', # insert semi-colon
+                80: 'normal! o ', # insert new line
+                83: 'IncrementChar', # increment char
+                81: 'DecrementChar', # decrement char
+                82: 'normal! ~h', # Change case
                 }
         # List of all keys that can be used to start a melody
         self.melodyKeys = [66]
@@ -24,12 +36,16 @@ class keyBinding(object):
                 }
         # This dictionary contains binding between action and melody
         self.melodyActions = {
-                'minorInterval': self.moveTwentyCharsDown
+                'minorInterval': 'insertCInclude'
                 }
 
-    def moveTwentyCharsDown(self):
-        self.nvim.command('normal! 20j')
-
+        self.actionImplementations = {
+                'moteTwentyCharsDown': 'normal! 20j',
+                'insertCInclude': 'normal! i#include ',
+                'inserCInt': 'normal! iint ',
+                'insertCReturn': 'normal! ireturn ',
+                'insertCVoid': 'normal! ivoid ',
+                }
 
 def millis_interval(start, end):
     """start and end are datetime instances"""
@@ -82,7 +98,7 @@ class MidiNvimProgrammer(object):
                     if self.checkMelodyInArray(mel):
                         statStr = " | melody \"%s\" detected, performing action!" % mel
                         # Perform the action as stated by the melody
-                        self.keys.melodyActions[mel]()
+                        self.nvim.command(self.keys.actionImplementations[self.keys.melodyActions[mel]])
                         self.melodyArray = []
                         self.inMelody = False
             self.statusBuffer[0] = statStr
